@@ -18,6 +18,7 @@ export const config = {
     origin: process.env.CORS_ORIGIN || '*',
   },
   apiSecretKey: process.env.API_SECRET_KEY || 'mi_token_privado_secreto_12345',
+  maxFileSizeMb: process.env.MAX_FILE_SIZE_MB ? Number(process.env.MAX_FILE_SIZE_MB) : 5,
 };
 
 export default config;

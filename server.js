@@ -1,15 +1,20 @@
 import express from 'express';
 import path from 'path';
+import helmet from 'helmet';
 import config from './config/env.js';
 import { sequelize, connectDB } from './config/database.js';
 import corsMiddleware from './middlewares/cors.middleware.js';
 import verifyPrivateAccess from './middlewares/privateAccess.middleware.js';
+import { apiLimiter } from './middlewares/rateLimit.middleware.js';
 import mainRouter from './routes/index.js';
 import './models/index.js'; // Cargar definición del modelo Image
 
 const app = express();
 
-// 1. Middlewares globales
+// 1. Middlewares globales de seguridad y utilidades
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" } // Permite cargar imágenes estáticas desde otros orígenes si CORS está habilitado
+}));
 app.use(corsMiddleware);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -17,8 +22,8 @@ app.use(express.urlencoded({ extended: true }));
 // 2. Servidor de archivos estáticos privado para acceso a imágenes (requiere token de acceso)
 app.use('/uploads', verifyPrivateAccess, express.static(path.join(process.cwd(), 'uploads')));
 
-// 3. Montar rutas principales de la API REST protegidas por token de acceso privado
-app.use('/api/v1', verifyPrivateAccess, mainRouter);
+// 3. Montar rutas principales de la API REST protegidas por rate limiting e IP, y por token de acceso privado
+app.use('/api/v1', apiLimiter, verifyPrivateAccess, mainRouter);
 
 // 4. Ruta de comprobación de salud (Health Check)
 app.get('/', (req, res) => {
@@ -40,6 +45,14 @@ app.get('/', (req, res) => {
 // 5. Manejo de errores global
 app.use((err, req, res, next) => {
   console.error('Error no capturado:', err.message);
+
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({
+      success: false,
+      message: `El archivo supera el tamaño máximo permitido de ${config.maxFileSizeMb}MB`,
+    });
+  }
+
   return res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Error interno del servidor',

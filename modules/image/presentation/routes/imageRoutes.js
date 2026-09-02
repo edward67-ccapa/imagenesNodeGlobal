@@ -7,11 +7,12 @@ import {
   deleteImage,
 } from '../controllers/imageController.js';
 import { uploadImageMiddleware } from '../../../../middlewares/upload.middleware.js';
+import { uploadLimiter } from '../../../../middlewares/rateLimit.middleware.js';
 
 const router = Router();
 
-// 1. Subir imagen (FormData: empresa, descripcion, imagen)
-router.post('/upload', uploadImageMiddleware.single('imagen'), uploadImage);
+// 1. Subir imagen (FormData: empresa, descripcion, imagen) protegida por rate limiter de subidas por IP
+router.post('/upload', uploadLimiter, uploadImageMiddleware.single('imagen'), uploadImage);
 
 // 2. Listar TODAS las imágenes: GET /api/v1/images
 router.get('/', getAllImages);
