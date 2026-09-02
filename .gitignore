@@ -1,0 +1,15 @@
+# Dependencias
+node_modules/
+
+# Entorno y Secretos
+.env
+*.log
+
+# Omitir todas las imágenes subidas pero mantener la carpeta principal uploads/ en Git
+uploads/*
+!uploads/.gitkeep
+
+# IDEs y Sistema Operativo
+.DS_Store
+.vscode/
+.idea/
